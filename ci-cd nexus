@@ -1,0 +1,38 @@
+pipeline {
+    agent any
+
+    stages {
+        stage('Checkout SCM') {
+            steps {
+                git 'github-url'
+            }
+        }
+
+        stage('Maven Build') {
+            steps {
+                sh 'mvn package'
+            }
+        }
+
+        stage('SonarQube Analysis') {
+            steps {
+                withSonarQubeEnv('sonar') { 
+                    sh '''
+                    mvn clean verify sonar:sonar \
+                    -Dsonar.projectKey=test-1 \
+                    -Dsonar.projectName=test-1 \
+                    -Dsonar.host.url=http://20.192.31.117:9000 \
+                    -Dsonar.token=sqp_4eee88e045b9695a6653cea7ce0e80d4dbdf7549
+                    '''
+                }
+            }
+        }
+
+        stage('Upload to Nexus') {
+            steps {
+                sh 'curl -v -u admin:password --upload-file target/webapp-0.1.war http://20.192.31.117:8081/repository/nexus/webapp-0.1.war'
+
+            }
+        }
+    }
+}
